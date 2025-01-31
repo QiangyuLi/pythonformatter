@@ -32,6 +32,10 @@ def format_code():
 @app.route('/sort-imports', methods=['POST'])
 def sort_imports():
     code = request.form['code']
+    confirm = request.form.get('confirm')
+    
+    if confirm != 'on':
+        return render_template('index.html', sorted_code="Sorting imports not confirmed.")
     
     try:
         sorted_code = subprocess.run(['isort', '--stdout', '-'], input=code.encode(), capture_output=True, check=True).stdout.decode()

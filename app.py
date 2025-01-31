@@ -29,5 +29,16 @@ def format_code():
     
     return render_template('index.html', formatted_code=formatted_code)
 
+@app.route('/sort-imports', methods=['POST'])
+def sort_imports():
+    code = request.form['code']
+    
+    try:
+        sorted_code = subprocess.run(['isort', '--stdout', '-'], input=code.encode(), capture_output=True, check=True).stdout.decode()
+    except subprocess.CalledProcessError as e:
+        sorted_code = f"Error sorting imports: {e}"
+    
+    return render_template('index.html', sorted_code=sorted_code)
+
 if __name__ == '__main__':
     app.run(debug=True)

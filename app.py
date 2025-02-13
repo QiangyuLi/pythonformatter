@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template
 import subprocess
+import ast
 
 app = Flask(__name__)
 
@@ -27,7 +28,52 @@ def format_code():
     except subprocess.CalledProcessError as e:
         formatted_code = f"Error formatting code: {e}"
     
+    # Check for import issues
+    import_issues = check_import_issues(code)
+    if import_issues:
+        formatted_code += f"\n\n{import_issues}"
+    
+    # Add other code evaluations here
+    evaluation_report = evaluate_code(code)
+    if evaluation_report:
+        formatted_code += f"\n\n{evaluation_report}"
+    
     return render_template('index.html', formatted_code=formatted_code)
+
+def check_import_issues(code):
+    try:
+        tree = ast.parse(code)
+        imported_modules = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    imported_modules.add(alias.asname or alias.name)
+            elif isinstance(node, ast.ImportFrom):
+                imported_modules.add(node.module)
+        
+        used_modules = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
+                used_modules.add(node.value.id)
+        
+        missing_imports = used_modules - imported_modules
+        if missing_imports:
+            return f"Error: The following modules are used but not imported: {', '.join(missing_imports)}"
+    except SyntaxError as e:
+        return f"Syntax error in code: {e}"
+    
+    return None
+
+def evaluate_code(code):
+    # Placeholder for additional code evaluations
+    # You can add more checks here and return a report
+    report = []
+    
+    # Example check: Check for TODO comments
+    if 'TODO' in code:
+        report.append("Note: There are TODO comments in the code.")
+    
+    return "\n".join(report) if report else None
 
 @app.route('/sort-imports', methods=['POST'])
 def sort_imports():
